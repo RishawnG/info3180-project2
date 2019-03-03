@@ -10,7 +10,7 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user, login_required
 from app.forms import LoginForm
 from app.models import UserProfile
-
+from werkzeug.security import check_password_hash
 
 ###
 # Routing for your application.
@@ -78,6 +78,10 @@ def send_text_file(file_name):
     file_dot_text = file_name + '.txt'
     return app.send_static_file(file_dot_text)
 
+@app.route('/secure_page')
+@login_required
+def secure_page():
+    return render_template('secure_page.html')
 
 @app.after_request
 def add_header(response):
