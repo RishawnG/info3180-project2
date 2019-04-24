@@ -15,3 +15,4 @@ class RegistrationForm(FlaskForm):
     email=EmailField("Email",validators=[InputRequired("Please enter a valid email address")])
     photo=FileField("Profile Picture",validators=[FileRequired("Upload your profile picture here"),FileAllowed(['jpg','png'],'')])
     
+

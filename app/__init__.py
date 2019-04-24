@@ -11,6 +11,7 @@ UPLOAD_FOLDER = './app/static/uploads/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
+
 app.config.from_object(__name__)
 
 from app import views
