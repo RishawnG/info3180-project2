@@ -63,7 +63,10 @@ def login():
         if user!= None and password=password:
         
     
-            
+@app.route('/api/auth/logout', methods = ['GET'])
+# @token_authenticate
+def logout():
+    return jsonify(message= "User successfully logged out.")
         
         
         
