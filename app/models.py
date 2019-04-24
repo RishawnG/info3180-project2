@@ -2,26 +2,28 @@ from . import db
 from werkzeug.security import generate_password_hash
 
 
-class UserProfile(db.Model):
-    # You can use this to change the table name. The default convention is to use
-    # the class name. In this case a class name of UserProfile would create a
-    # user_profile (singular) table, but if we specify __tablename__ we can change it
-    # to `user_profiles` (plural) or some other name.
-    __tablename__ = 'user_profiles'
-
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(80))
-    last_name = db.Column(db.String(80))
     username = db.Column(db.String(80), unique=True)
-    password = db.Column(db.String(255))
+    password = db.Column(db.String(255), default= "Something")
+    first_name = db.Column(db.String(80), default= "Something")
+    last_name = db.Column(db.String(80), default= "Something")
+    email= db.Column(db.String(20), default= "Something")
+    location= db.Column(db.String(60), default= "Something")
+    biography= db.Column(db.Text,nullable = False, default= "Something")
+    profile_photo= db.Column(db.String(20), default= "Something")
+    joined_on = db.Column(db.String(20), default= "Something")
+    post = db.relationship("Post", backref= "author", lazy =True)
+    like = db.relationship("Likes", backref = "liker")
+    
 
 
-
-    def __init__(self,first_name,last_name,username,password):
+    def __init__(self,first_name,last_name,username):
         self.first_name=first_name
         self.last_name=last_name
         self.username=username
-        self.password= generate_password_hash(password, method='pbkdf2:sha256') 
+        
+
 
     def is_authenticated(self):
         return True
@@ -40,3 +42,19 @@ class UserProfile(db.Model):
 
     def __repr__(self):
         return '<User %r>' % (self.username)
+
+class Post(db.Model):
+    id= db.Column(db.Integer,primary_key = True)
+    user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
+    photo = db.Column(db.String )
+    caption = db.Column(db.Text)
+    created_on = db.Column(db.String(20))
+    likes = db.relationship('Likes',backref="Likers")
+
+class Likes(db.Model):
+    id= db.Column(db.Integer,primary_key = True)
+    user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
+    post_id = db.Column(db.Integer,db.ForeignKey('post.id'))
+
+##class Follows(db.Model):
+  #####follower_id = db.Column(db.Integer, db.ForeignKey('user.id'))
