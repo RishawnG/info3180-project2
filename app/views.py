@@ -5,12 +5,16 @@ Werkzeug Documentation:  http://werkzeug.pocoo.org/documentation/
 This file creates your application.
 """
 
-from app import app
+from app import app,db
+from app.models import Follow,User,Likes
 from flask import render_template, request,jsonify
-from .forms import UploadForm
+from .forms import RegistrationForm,LoginForm
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash,check_password_hash
 import os
 import datetime
+import jwt
+from functools import wraps
 ###
 # Routing for your application.
 ###
@@ -30,6 +34,7 @@ def index(path):
     """
     return render_template('index.html')
     
+    
 @app.route('/api/users/register',methods=["POST"])
 def register():
     form = RegistrationForm()
@@ -44,38 +49,44 @@ def register():
         photo = form.photo.data
         date = str(datetime.date.today())
         filename = username+secure_filename(photo.filename)
-        user = Users(username=username, password=password, first_name=firstname, last_name=lastname, email=email, location=location, biography=biography, profile_photo=filename, joined_on=date)
-        photo.save(os.path.join("./app",app.config['PROFILE_IMAGES'], filename))
+        user = User(username=username, password=password, first_name=firstname, last_name=lastname, email=email, location=location, biography=biography, profile_photo=filename, joined_on=date)
+        photo.save(os.path.join(app.config['PROFILE_IMAGES'], filename))
         db.session.add(user)
         db.session.commit()
+            
         return jsonify(message = "User successfully registered")
+
+    
     return jsonify(errors=form_errors(form))
 
-
-@app.route('/api/auth/login',methods=['POST'])
+@app.route('/api/auth/login',methods=["POST"])
 def login():
-    form =LoginForm()
-    if request.method=='POST' and form.validate_on_submit():
+    form = LoginForm()
+    if request.method == "POST" and form.validate_on_submit():
         username = form.username.data
         password = form.password.data
         
-        user=Users.query.filter_by(username=username).first()
-        if user!= None and password=password:
-        
+        user = User.query.filter_by(username=username).first()
+        if user != None and check_password_hash(user.password, password):
+            payload = {'user': user.username}
+            jwt_token = jwt.encode(payload,app.config['SECRET_KEY'],algorithm = "HS256")
+            response = {'message': 'User successfully logged in','token':jwt_token, "user_id": user.id}
+            
+            return jsonify(response)
+            
+        return jsonify(errors="Username or password is incorrect")
     
-@app.route('/api/auth/logout', methods = ['GET'])
-# @token_authenticate
-def logout():
-    return jsonify(message= "User successfully logged out.")
-        
-        
-        
-        
-        
-        
-        
+    return jsonify(errors=form_errors(form))
+
+# @app.route("api/users/post")
+
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
+
+@app.route('/api/auth/logout', methods = ['GET'])
+def logout():
+    return jsonify(message= "User successfully logged out.")
+
 def form_errors(form):
     error_messages = []
     """Collects form errors"""

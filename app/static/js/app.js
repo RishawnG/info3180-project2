@@ -31,6 +31,11 @@ Vue.component('app-header', {
             <li v-else class="nav-item">
               <router-link class="nav-link active" to="/login">Login</router-link>
             </li>
+            
+            <li class="nav-item active">
+              <router-link class="nav-link" to="/register">Register</router-link>
+            </li>
+            
         </ul>
     </nav>
     `,
@@ -64,76 +69,204 @@ const Home = Vue.component('home', {
     }
 });
 
-
-const Registration = Vue.component('registration-form',{
-    template:`
-    <div>
-    <h1>Upload Photo</h1>
+//registration
+const Register=Vue.component("register",{
+  
     
-        <form id="registrationForm" @submit.prevent="UploadForm" enctype="multipart/form-data">
-            <label>Description:</label><br/>
-            <textarea name='description'></textarea><br/>
-            <label for='photo' class='btn btn-primary'>Browse....</label> <span>{{ filename }}</span>
-            <input id="photo" type="file" name='photo' style="display: none" v-on:change = "onFileSelected" /><br/>
-            <input type="submit" value="Upload" class="btn btn-success"/>
-        </form>
+  template:`
+        <div class = everything>
+          
+          <h3 class="card-header center text-muted">Register</h3>
+          <div class="card center">
+           
+            <form id="register" @submit.prevent="Register" enctype="multipart/form-data">
+            <div>
+                <label>Firstname:</label><br/>
+                
+               <input type='text' id='firstname' name='firstname' style="width: 100%;"/>
+            </div>
+            <div>
+                <label>Lastname:</label><br/>
+               <input type='text' id='lastname' name='lastname' style="width: 100%;"/>
+            </div>
+            <div>
+                <label>Username:</label><br/>
+               <input type='text' id='username' name='username' style="width: 100%;"/>
+               
+            </div>
+            <div>
+                <label>Password:</label><br/>
+               <input type='password' id='password' name='password' style="width: 100%;"/>
+            </div>
+            <div>
+                <label>Email:</label><br/>
+               <input type='text' id='email' name='email' placeholder="jdoe@example.com" style="width: 100%;"/>
+            </div>
+            <div>
+                <label>Location:</label><br/>
+               <input type='text' id='location' name='location' style="width: 100%;"/>
+            </div>
+            <div>
+                <label>Biography:</label><br/>
+               <textarea name="biography" rows="3" style="width:100%"> </textarea><br/>
+            </div>
+            <div>
+                <label for='photo' class='btn btn-primary'>Browse....</label> <span>{{ filename }}</span>
+                
+                <input id="photo" type="file" name='photo' style="display: none" v-on:change = "onFileSelected" /><br/>
+                
+            </div>
+                <br/>
+                 <div>
+                      <input type="submit" id="submit" class="btn btn-success" value="Register" /> 
+                    </div>
+                
+            </form>
+            <div v-if='messageFlag' style="margin-top: 5%;">
+            
+                <div v-if="!errorFlag ">
+                    <div class="alert alert-success" >
+                        {{ message }}
+                    </div>
+                </div>
+                <div v-else >
+                    <ul class="alert alert-danger">
+                        <li v-for="error in message">
+                            {{ error }}
+                        </li>
+                    </ul>
+                </div>
+                
+            </div>
+        </div>
     </div>
+  `,
+   methods: {
+      Register : function(){
+          let self = this;
+          let register = document.getElementById('register');
+          let form_data = new FormData(register);
+          
+          fetch("/api/users/register", {
+              method: "POST",
+              body: form_data,
+              headers: {
+              'X-CSRFToken': token
+              },
+              credentials: 'same-origin'
+          }).then(function(response){
+              return response.json();
+          }).then(function (jsonResponse) {
+              // display a success message
+              self.messageFlag = true
+              
+              if (jsonResponse.hasOwnProperty("errors")){
+                  self.errorFlag=true;
+                  self.message = jsonResponse.errors;
+              }else if(jsonResponse.hasOwnProperty("message")){
+                  router.push("/login");
+              }
+        });
+      },
+      onFileSelected: function(){
+        let self = this
+        let filenameArr = $("#photo")[0].value.split("\\");
+        self.filename = filenameArr[filenameArr.length-1]
+      }
+   },
+   data: function(){
+     return {
+        errorFlag: false,
+        messageFlag: false,
+        message: [],
+        filename: "No File Selected"
+    }
+   }
+});
+
+
+
+
+
+const Login = Vue.component('login', {
+    template:`
+     <div>
+        <form id="login-form" @submit.prevent="login">
+            <div class="card-header center">
+              <strong>Login</strong>
+            </div>
+            <div class="card center">
+              <div class="card-body login">
+                <div style="margin-top:5%;">
+                  <label for='username'><strong>Username</strong></label><br>
+                  <input type='text' id='username' name='username' style="width: 100%;"/>
+                </div>
+                <div style="margin-top:5%;">
+                  <label for='password'><strong>Password</strong></label><br>
+                  <input type='password' id='password' name='password' style="width: 100%;"/>
+                </div>
+                <div style="margin-top:5%;">
+                  <button id="submit" class="btn btn-success">Login</button> 
+                </div>
+                <div v-if='messageFlag' style="margin-top:5%;">
+                  <div class="alert alert-danger center" style="width: 100%; margin-top: 5%;">
+                    {{ message }}
+                  </div>
+                </div>
+              </div>
+            </div>
+        </form>
+      </div>
     `,
-    methods: {
-        UploadForm: function(){
-            let self = this;
-            let uploadForm = document.getElementById('uploadForm');
-            let form_data = new FormData(uploadForm);
+    methods:{
+      login: function(){
+        const self = this
+        
+        let login_data = document.getElementById('login-form');
+        let login_form = new FormData(login_data);
+        
+        fetch("/api/auth/login",{
+          method: "POST",
+          body: login_form,
+          headers: {
+          'X-CSRFToken': token
+          },
+          credentials: 'same-origin'
+        }).then(function(response){
+          return response.json();
+        }).then(function(jsonResponse){
+          self.messageFlag = true;
+          
+          if(jsonResponse.hasOwnProperty("token")){
+            cuser={"token":jsonResponse.token, id: jsonResponse.user_id};
+            localStorage.current_user = JSON.stringify(cuser);
             
-            fetch("/api/upload", {
-                method: "post",
-                body: form_data,
-                headers: {
-                    'X-CSRFToken': token
-                },
-                credentials: 'same-origin'
-            }).then(function(response){
-                return response.json();
-            }).then(function (jsonResponse) {
-                // display a success message
-                self.messageFlag = true;
-                if (jsonResponse.hasOwnProperty("errors")){
-                    self.errorFlag=true;
-                    self.message = jsonResponse.errors;
-                }else if(jsonResponse.hasOwnProperty("message")){
-                    self.errorFlag = false;
-                    self.message = "File Upload Successful";
-                    self.cleanForm();
-                }
-             })
-             .catch(function (error) {   
-                console.log(error);
-             });
-        },
-        cleanForm : function(){
-            let form =$("#uploadForm")[0];
-            let self = this;
-            
-            form.description.value = "";
-            form.photo.value = "";
-            self.filename = "";
-        },
-        onFileSelected: function(){
-            let self = this;
-            let filenameArr = $("#photo")[0].value.split("\\");
-            self.filename = filenameArr[filenameArr.length-1];
-        }
+            router.go();
+            router.push("/explore")
+          }else{
+            self.message = jsonResponse.errors
+          }
+
+        }).catch(function(error){
+          self.messageFlag = false;
+          console.log(error);
+        });
+      }
     },
     data: function(){
-        return {
-            errorFlag: false,
-            messageFlag: false,
-            message: [],
-            filename: ""
-        };
-    },
+      return {
+        messageFlag: false,
+        message: ""
+      }
+    }
     
 });
+
+
+
+
+
+
 
 const NotFound = Vue.component('not-found', {
     template: `
@@ -151,8 +284,9 @@ const router = new VueRouter({
     mode: 'history',
     routes: [
         {path: "/", component: Home},
-        {path: "/upload", component: Upload},
-        
+        // {path: "/upload", component: Upload},
+        {path: "/register/", component: Register},
+        {path: "/login/", component: Login},
         
         
         
