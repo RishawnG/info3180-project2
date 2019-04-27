@@ -2,22 +2,24 @@ from . import db
 from werkzeug.security import generate_password_hash
 
 
-class User(db.Model):
-    ___tablename___="userprofile"
+class Users(db.Model):
+    
+    __tablename__ = 'userprofile'
+    
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True)
+    username = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255),nullable = False )
-    first_name = db.Column(db.String(80),)
-    last_name = db.Column(db.String(80),)
-    email= db.Column(db.String(20), default= "Something")
-    location= db.Column(db.String(60), default= "Something")
+    first_name = db.Column(db.String(255),)
+    last_name = db.Column(db.String(255),)
+    email= db.Column(db.String(200), default= "Something")
+    location= db.Column(db.String(255), default= "Something")
     biography= db.Column(db.Text,nullable = False, default= "Something")
-    profile_photo= db.Column(db.String(20), default= "Something")
-    joined_on = db.Column(db.String(20), default= "Something")
+    profile_photo= db.Column(db.String(200), default= "default.png")
+    joined_on = db.Column(db.String(200), default= "Something")
     post = db.relationship("Post", backref= "author", lazy =True)
     like = db.relationship("Likes", backref = "liker")
-    follower = db.relationship("Follow",foreign_keys="Follow.user_id",backref= "followeee")
-    followee = db.relationship("Follow", foreign_keys="Follow.follower_id", backref = "folowereee")
+    follower = db.relationship("Follow",foreign_keys="Follow.user_id")#, backref= "followeee")
+    followee = db.relationship("Follow", foreign_keys="Follow.follower_id")#, backref = "followeee")
    
 
     def __init__(self, username, password, first_name, last_name, email, location, biography, profile_photo, joined_on):
@@ -53,7 +55,7 @@ class User(db.Model):
 
 class Post(db.Model):
     id= db.Column(db.Integer,primary_key = True)
-    user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer,db.ForeignKey('userprofile.id'))
     photo = db.Column(db.String )
     caption = db.Column(db.Text)
     created_on = db.Column(db.String(20))
@@ -67,7 +69,7 @@ class Post(db.Model):
     
 class Likes(db.Model):
     id= db.Column(db.Integer,primary_key = True)
-    user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer,db.ForeignKey('userprofile.id'))
     post_id = db.Column(db.Integer,db.ForeignKey('post.id'))
 
     def __init__(self,post_id,user_id):
@@ -78,8 +80,8 @@ class Likes(db.Model):
 
 class Follow(db.Model):
     id= db.Column(db.Integer,primary_key = True)
-    user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
-    follower_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer,db.ForeignKey('userprofile.id'))
+    follower_id = db.Column(db.Integer, db.ForeignKey('userprofile.id'))
 
     def __init__(self,user_id,follower_id):
         self.user_id= user_id

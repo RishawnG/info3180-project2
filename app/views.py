@@ -6,7 +6,7 @@ This file creates your application.
 """
 
 from app import app,db
-from app.models import Follow,User,Likes
+from app.models import Follow,Users,Likes
 from flask import render_template, request,jsonify
 from .forms import RegistrationForm,LoginForm
 from werkzeug.utils import secure_filename
@@ -49,7 +49,7 @@ def register():
         photo = form.photo.data
         date = str(datetime.date.today())
         filename = username+secure_filename(photo.filename)
-        user = User(username=username, password=password, first_name=firstname, last_name=lastname, email=email, location=location, biography=biography, profile_photo=filename, joined_on=date)
+        user = Users(username=username, password=password, first_name=firstname, last_name=lastname, email=email, location=location, biography=biography, profile_photo=filename, joined_on=date)
         photo.save(os.path.join(app.config['PROFILE_IMAGES'], filename))
         db.session.add(user)
         db.session.commit()
@@ -66,7 +66,7 @@ def login():
         username = form.username.data
         password = form.password.data
         
-        user = User.query.filter_by(username=username).first()
+        user = Users.query.filter_by(username=username).first()
         if user != None and check_password_hash(user.password, password):
             payload = {'user': user.username}
             jwt_token = jwt.encode(payload,app.config['SECRET_KEY'],algorithm = "HS256")
@@ -86,7 +86,33 @@ def login():
 @app.route('/api/auth/logout', methods = ['GET'])
 def logout():
     return jsonify(message= "User successfully logged out.")
-
+    
+def token_authenticate(t):
+    @wraps(t)
+    def decorated(*args, **kwargs):
+        
+        auth = request.headers.get('Authorization', None)
+        
+        if not auth:
+            return jsonify({'error': 'Access Denied : No Token Found'}), 401
+        else:
+            try:
+                userdata = jwt.decode(auth.split(" ")[1], app.config['SECRET_KEY'])
+                currentUser = Users.query.filter_by(username = userdata['user']).first()
+                
+                if currentUser is None:
+                    return jsonify({'error': 'Access Denied'}), 401
+                
+            except jwt.exceptions.InvalidSignatureError as e:
+                print (e)
+                return jsonify({'error':'Invalid Token'})
+            except jwt.exceptions.DecodeError as e:
+                print (e)
+                return jsonify({'error': 'Invalid Token'})
+            return t(*args, **kwargs)
+    return decorated
+    
+    
 def form_errors(form):
     error_messages = []
     """Collects form errors"""
@@ -102,7 +128,18 @@ def form_errors(form):
 
 
 
-
+# @app.route("api/auth/post",methods = ["POST"])
+# def viewPost():
+#     allPost= Posts.query.all()
+#     postings=[]
+#     for post in allPost:
+#         user = Users.query.filter_by(id=post.user_id).first()
+#         likes= len(Likes.query.filter_by(post_id=post.id).all())
+#         post= {"id":post.id,"user_id":post.userid,"username":user.username,"user_photo": os.path.join(app.config['PROFILE_IMAGES]'],user.profile_photo),"photo": os.path.join(app.config['UPLOAD_FOLDER'],post.photo), "caption": post.caption, "created_on": strf_time(post.created_on, "%d %B %Y"), "likes": likes}"}         
+#         postings.append(post)
+#     return jsonify(postings=postings)
+          
+        
 
 ###
 # The functions below should be applicable to all Flask apps.

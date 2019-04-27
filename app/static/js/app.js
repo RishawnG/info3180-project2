@@ -22,7 +22,7 @@ Vue.component('app-header', {
             </li>
             
             <li class="nav-item active">
-              <router-link class="nav-link" :to="{name: 'users', params: {user_id: cu_id}}">My Profile</router-link>
+              <router-link class="nav-link" to="{name: 'users', params: {user_id: cu_id}}">My Profile</router-link>
             </li>
             <li v-if="auth" class="nav-item active">
               <router-link class="nav-link" to="/logout">Logout</router-link>
@@ -59,11 +59,51 @@ Vue.component('app-footer', {
 
 const Home = Vue.component('home', {
    template: `
-    <div class="jumbotron">
+   
+    <div class="col-md-4 home-container-child float-clear">
+            <img src="/static/serverimage/woodenbridge.jpg" id="home-img"/>
+        </div>
+
+
+
+
+   <div class="col-md-4 landing-container-child" >
+    <div class="card center">
+    <div style = "margin-left 80%;">
         <h1>Photogram</h1>
+        <hr/>
+        <p>Share photos of your favourite moments with your friends, family and the world</p>
+
+       <button class= 'btn btn-success' type="button" onclick="window.location.href='/register'">Register</button>
+       <button class= 'btn btn-primary' type="button" onclick="window.location.href='/login'">Login</button>
+
 
     </div>
+    </div>
+    </div>
+   
+   
+   
+   
+   
+  
+   
+    
+    
+    
+    
+    
+    
+    
    `,
+   methods:{
+       Home: function(){
+            let register = document.getElementById('register');
+            let login_data = document.getElementById('login-form');
+       }
+       
+        
+   },
     data: function() {
        return {}
     }
@@ -287,6 +327,9 @@ const router = new VueRouter({
         // {path: "/upload", component: Upload},
         {path: "/register/", component: Register},
         {path: "/login/", component: Login},
+        
+        
+        
         
         
         
