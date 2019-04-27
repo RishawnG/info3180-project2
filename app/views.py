@@ -59,7 +59,7 @@ def register():
     
     return jsonify(errors=form_errors(form))
 
-@app.route('/api/auth/login',methods=["POST"])
+@app.route('/api/auth/login',methods=["GET","POST"])
 def login():
     form = LoginForm()
     if request.method == "POST" and form.validate_on_submit():
@@ -67,19 +67,63 @@ def login():
         password = form.password.data
         
         user = Users.query.filter_by(username=username).first()
-        if user != None and check_password_hash(user.password, password):
+        if user is not None or check_password_hash(user.password, password):
+            
             payload = {'user': user.username}
-            jwt_token = jwt.encode(payload,app.config['SECRET_KEY'],algorithm = "HS256")
+            jwt_token = jwt.encode(payload,'secret',algorithm = "HS256")
             response = {'message': 'User successfully logged in','token':jwt_token, "user_id": user.id}
             
             return jsonify(response)
             
-        return jsonify(errors="Username or password is incorrect")
+        return jsonify(errors=["Username or password is incorrect"])
     
     return jsonify(errors=form_errors(form))
 
-# @app.route("api/users/post")
-
+@app.route('/api/users/<user_id>/posts', methods =['GET','POST'])
+def post(user_id):
+    if request.method == 'GET':
+        posts = Post.query.filter_by(id = user_id).all()
+        user = UserProfile.query.filter_by(id = user_id).first()
+        followers = len(Follows.query.filter_by(id=user_id).all())
+        response = {"postinfo": { "firstname": user.first_name, "lastname": user.last_name, "location" :user.location, "datejoined": user.date_joined,"biography": user.biography,"profilepic":os.path.join(app.config['PROFILE_PICT'], user.photograph ),"tposts": len(posts),"followers": followers, "images": []}}
+        for i in posts:
+            spost = {"id": i.post_id, "uid": i.user_id, "photo": os.path.join(app.config['UPLOAD_FOLDER'], i.photo) , "caption": i.caption, "pcreation": i.created_on}
+            response["postinfo"]["images"].append(spost)
+        return jsonify(response)
+    
+    if request.method == 'POST':
+        filefolder = app.config['UPLOAD_FOLDER']
+        form = PostsForm()
+        if form.validate_on_submit():
+            uid = form.user_id.data
+            image = request.files['image']
+            caption = form.caption.data
+            user = UserProfile.query.filter_by(id=uid).first()
+            filename = secure_filename(image.filename)
+            creation = datetime.date.today().strftime('%Y-%m-%d')
+            post = Post(id=uid,photo=filename,caption=caption ,created_on=creation)
+            image.save(os.path.join(filefolder, filename))
+            db.session.add(post)
+            db.session.commit()
+            return jsonify(message= "Post successfully created ")
+        return jsonify(errors=form_errors(form))
+        
+@app.route('/api/users/<user_id>/follow', methods = ['POST'])
+def follow(user_id):
+    requests = request.get_json()
+    hold = requests['user_id']
+    holdx = requests['follower_id']
+    testfollowing = Follows.query.filter_by(follower_id=holdx).all()
+    if testfollowing is not None:
+        for f in testfollowing:
+            if f.user_id == hold:
+                return jsonify(message="Already Following")
+    
+    follow = Follows(follower_id = requests['follower_id'], user_id = requests['user_id'])
+    db.session.add(follow)
+    db.session.commit()
+    return jsonify(message="Follow Successful")
+    
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
 
@@ -87,30 +131,6 @@ def login():
 def logout():
     return jsonify(message= "User successfully logged out.")
     
-def token_authenticate(t):
-    @wraps(t)
-    def decorated(*args, **kwargs):
-        
-        auth = request.headers.get('Authorization', None)
-        
-        if not auth:
-            return jsonify({'error': 'Access Denied : No Token Found'}), 401
-        else:
-            try:
-                userdata = jwt.decode(auth.split(" ")[1], app.config['SECRET_KEY'])
-                currentUser = Users.query.filter_by(username = userdata['user']).first()
-                
-                if currentUser is None:
-                    return jsonify({'error': 'Access Denied'}), 401
-                
-            except jwt.exceptions.InvalidSignatureError as e:
-                print (e)
-                return jsonify({'error':'Invalid Token'})
-            except jwt.exceptions.DecodeError as e:
-                print (e)
-                return jsonify({'error': 'Invalid Token'})
-            return t(*args, **kwargs)
-    return decorated
     
     
 def form_errors(form):
@@ -139,7 +159,8 @@ def form_errors(form):
 #         postings.append(post)
 #     return jsonify(postings=postings)
           
-        
+
+
 
 ###
 # The functions below should be applicable to all Flask apps.

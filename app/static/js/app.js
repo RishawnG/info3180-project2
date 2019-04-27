@@ -2,7 +2,7 @@
 Vue.component('app-header', {
     template: `
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
-      <img src='static/images/logo.png' class="small-logo"/>
+       <img src='static/serverimage/logo1.png' class="small-logo"/>
       <a class="navbar-brand" href="/">Photogram</a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -60,27 +60,31 @@ Vue.component('app-footer', {
 const Home = Vue.component('home', {
    template: `
    
-    <div class="col-md-4 home-container-child float-clear">
-            <img src="/static/serverimage/woodenbridge.jpg" id="home-img"/>
+   
+    <div class="row landing-container">
+        <div class="col-md-4 landing-container-child" style="margin-left: 11%;">
+            <img src="/static/serverimage/woodenbridge.jpg" id="landing-img"  style = "border: 1px; border-radius: 5px; width: 100%; height: 100%;"/>
         </div>
-
-
-
-
-   <div class="col-md-4 landing-container-child" >
-    <div class="card center">
-    <div style = "margin-left 80%;">
-        <h1>Photogram</h1>
-        <hr/>
-        <p>Share photos of your favourite moments with your friends, family and the world</p>
-
-       <button class= 'btn btn-success' type="button" onclick="window.location.href='/register'">Register</button>
-       <button class= 'btn btn-primary' type="button" onclick="window.location.href='/login'">Login</button>
-
-
+        <div class="col-md-4  landing-container-child float-clear">
+          <div class="card" style="width: 28rem; height: 23rem; box-shadow: 2px 2px 10px grey;">
+            <img class="card-img-top" src="static/images/logo.png"  style="width: 60%; margin: 0 auto; padding-top: 20px;">
+            <div class="card-body" style="padding-top: 0px;">
+              <hr>
+              <p class="card-text">Share photos of your favourite moments with friends, family and the world.</p>
+              <div style="margin-top: 20%;">
+                  <button class= 'btn btn-success' type="button" onclick="window.location.href='/register'">Register</button>
+                  <button class= 'btn btn-primary' type="button" onclick="window.location.href='/login'">Login</button>
+                 
+              </div>
+            </div>
+          </div>  
+        </div>
     </div>
-    </div>
-    </div>
+   
+   
+   
+   
+   
    
    
    
@@ -108,6 +112,104 @@ const Home = Vue.component('home', {
        return {}
     }
 });
+
+
+const NewPost = Vue.component('new-post', {
+  template: `
+  <div>
+    <form class="center" id="npostform" @submit.prevent="submit">
+      <div class="card-header center"><strong>New Post</strong></div>
+      <div class="card center">
+        <div class="card-body">
+          	<label><strong>Photo</strong></label><br>
+          	<input id="user_id" name="user_id" v-bind:value="cu_id" style="display: none;"/>
+            <label class="btn" style="border: 0.5px solid black" for="photo"><strong>Browse</strong></label>
+            <label>{{ filename }}</label>
+            <br>
+            <input type = "file" id="photo" name="photo" style="display: none;" v-on:change="updateFilename"/>
+            <label style="margin-top: 5%"><strong>Caption</strong></label><br>
+            <textarea id="caption" name="caption" style="width:100%" placeholder="Write a caption..."></textarea>
+            <button id="submit" class = "btn btn-success">Submit</button>
+            
+            <div v-if='messageFlag' >
+              <div v-if="errorFlag">
+                <div style="width: 100%; margin-top: 5%;">
+                  <ul class="alert alert-danger">
+                    <li v-for="error in message">
+                        {{ error }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div v-else class="alert alert-success" style="width: 100%; margin-top: 5%;">
+                {{ message }}
+              </div>
+            </div>
+        </div>    
+      </div>
+    </form>
+  </div>
+  `,
+  methods: {
+    updateFilename :function(){
+        const self = this
+        let filenameArr = $("#photo")[0].value.split("\\");
+        self.filename = filenameArr[filenameArr.length-1]
+    },
+    submit: function(){
+      self = this;
+      self.messageFlag = true;
+      self.message = "Sending Post......";
+      
+      fetch(`/api/users/${JSON.parse(localStorage.current_user).id}/posts`,{
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${JSON.parse(localStorage.current_user).token}`,
+          'X-CSRFToken': token
+        },
+        body: new FormData(document.getElementById("npostform")),
+        credentials: 'same-origin'
+        
+      }).then(function(response){
+        return response.json();
+      }).then(function(jsonResponse){
+        
+        
+        if(jsonResponse.hasOwnProperty("status")){
+         if(jsonResponse.status == 201){
+            self.errorFlag = false;
+            self.message = jsonResponse.message
+          }else{
+            self.errorFlag = true;
+            self.message= jsonResponse.errors;
+          } 
+        }
+      }).catch(function(error){
+        self.message = "Unexpected Error"
+        console.log(error);
+      });
+    }
+  },
+  data: function(){
+    return {
+      filename: 'No File Selected',
+      messageFlag: false,
+      errorFlag: false,
+      message: "",
+      cu_id: JSON.parse(localStorage.current_user).id
+    }
+  }
+  
+});
+
+
+
+
+
+
+
+
+
 
 //registration
 const Register=Vue.component("register",{
@@ -226,83 +328,206 @@ const Register=Vue.component("register",{
 
 
 
-
-
-const Login = Vue.component('login', {
-    template:`
-     <div>
-        <form id="login-form" @submit.prevent="login">
-            <div class="card-header center">
-              <strong>Login</strong>
-            </div>
-            <div class="card center">
-              <div class="card-body login">
-                <div style="margin-top:5%;">
-                  <label for='username'><strong>Username</strong></label><br>
-                  <input type='text' id='username' name='username' style="width: 100%;"/>
+const Explore = Vue.component("explore", {
+  template:`
+    <div class="row">
+      
+      <div v-if="postFlag" class="col-md-7" style="margin: 0 auto;">
+        <div class="card" style=" width:100%; padding: 0; margin-bottom: 5%" v-for="(post, index) in posts">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <img id="pro-photo" v-bind:src=post.user_profile_photo style="width:40px"/>
+              <router-link class="username" :to="{name: 'users', params: {user_id: post.user_id}}">{{ post.username }}</router-link>
+            </li>
+            <li class="list-group-item" style="padding: 0;">
+              <img id="post-img" v-bind:src=post.photo style="width:100%" />
+            </li>
+            <li class="list-group-item text-muted">
+              {{ post.caption }}
+              <div class="row" style="margin-top: 10%">
+                <div id="likes" class="col-md-6" style="text-align: left;">
+                  <img class="like-ico liked" src="static/icons/liked.png"  v-on:click="like" style="width:20px; display: none;"/>
+                  <img class="like-ico like" src="static/icons/like.png"  v-on:click="like" style="width:20px;"/> {{post.likes}} Likes
+                  
+                  <input type="hidden" id="post-id"  v-bind:value="post.id" />
+                  <input type="hidden" id="post-index" v-bind:value="index" />
                 </div>
-                <div style="margin-top:5%;">
-                  <label for='password'><strong>Password</strong></label><br>
-                  <input type='password' id='password' name='password' style="width: 100%;"/>
-                </div>
-                <div style="margin-top:5%;">
-                  <button id="submit" class="btn btn-success">Login</button> 
-                </div>
-                <div v-if='messageFlag' style="margin-top:5%;">
-                  <div class="alert alert-danger center" style="width: 100%; margin-top: 5%;">
-                    {{ message }}
-                  </div>
+                <div id="post-date" class="col-md-6" style="text-align: right">
+                  {{post.created_on}}
                 </div>
               </div>
-            </div>
-        </form>
+            </li>
+          </ul>
+        </div>
       </div>
-    `,
-    methods:{
-      login: function(){
-        const self = this
+      <div v-else>
+        <div class="alert alert-primary" >
+          We Couldnt find any posts Anywhere. Be the first user to post on our site.
+        </div>
+      </div>
         
-        let login_data = document.getElementById('login-form');
-        let login_form = new FormData(login_data);
-        
-        fetch("/api/auth/login",{
-          method: "POST",
-          body: login_form,
-          headers: {
-          'X-CSRFToken': token
-          },
-          credentials: 'same-origin'
-        }).then(function(response){
-          return response.json();
-        }).then(function(jsonResponse){
-          self.messageFlag = true;
-          
-          if(jsonResponse.hasOwnProperty("token")){
-            cuser={"token":jsonResponse.token, id: jsonResponse.user_id};
-            localStorage.current_user = JSON.stringify(cuser);
-            
-            router.go();
-            router.push("/explore")
-          }else{
-            self.message = jsonResponse.errors
-          }
-
-        }).catch(function(error){
-          self.messageFlag = false;
-          console.log(error);
-        });
-      }
-    },
-    data: function(){
-      return {
-        messageFlag: false,
-        message: ""
-      }
-    }
+      <div class="col-md-3">
+        	<router-link class="btn btn-primary" to="/posts/new" style="width:100%;">New Post</router-link>
+      </div>
+    </div>
+  `,
+  created: function(){
+    self = this;
     
+    fetch("/api/posts", {
+      method: "GET",
+      headers:{
+        "Authorization": `Bearer ${JSON.parse(localStorage.current_user).token}`,
+        'X-CSRFToken': token
+      },
+      credentials: 'same-origin'
+    }).then(function(response){
+      return response.json();
+    }).then(function(jsonResponse){
+      if(jsonResponse.hasOwnProperty("posts")){
+        if(jsonResponse.posts.length !=0){
+          self.posts = jsonResponse.posts.reverse();
+          self.postFlag = true;
+        }
+      }
+    }).catch(function(error){
+      console.log(error);
+    });
+  },
+  methods: {
+    like: function(event){
+      self = this;
+      let node_list = event.target.parentElement.children;
+      let post_id = node_list[node_list.length-2].value;
+      let post_index = node_list[node_list.length-1].value;
+      
+      fetch(`/api/posts/${post_id}/like`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${JSON.parse(localStorage.current_user).token}`,
+          'X-CSRFToken': token,
+          'Content-Type': 'application/json'
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({"user_id": JSON.parse(localStorage.current_user).id, "post_id": post_id})
+      }).then(function(response){
+        return response.json();
+      }).then(function(jsonResponse){
+        
+        if(jsonResponse.hasOwnProperty("status")){
+          if(jsonResponse.status == 201){
+            event.target.style.display="none"
+            event.target.previousElementSibling.style.display="";
+            self.posts[post_index].likes = jsonResponse.likes;
+          }
+        }
+      }).catch(function(error){
+        console.log(error);
+      });
+    }
+  },
+  data: function(){
+    return {
+      posts: [],
+      postFlag: false
+    }
+  }
 });
 
 
+
+
+
+
+
+
+const Login = Vue.component('login', {
+    template:`<div>
+        <form id="loginform" @submit.prevent="login">
+            <div class="card-header center">
+                <strong>Login</strong>
+            </div>
+            <div class="card center">
+                <div class="card-body login">
+                    <div style="margin-top:5%;">
+                        <label for='username'><strong>Username</strong></label><br>
+                        <input type='text' id='username' name='username' style="width: 100%;"/>
+                    </div>
+                    <div style="margin-top:5%;">
+                        <label for='password'><strong>Password</strong></label><br>
+                        <input type='password' id='password' name='password' style="width: 100%;"/>
+                    </div>
+                    <div style="margin-top:5%;">
+                        <button id="submit" class="btn btn-success"> Login </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>`,
+    methods:{
+        login: function(){
+            const self = this
+            let login_data= document.getElementById('loginform');
+            let login_form= new FormData(login_data);
+
+            fetch("/api/auth/login",{
+                method: "POST",
+                body: login_form,
+                headers: {
+                    'X-CSRFTOKEN':token
+                },
+                credentials: 'same-origin'
+
+            }).then(function(response){
+                return response.json();
+            }).then(function(jsonResponse){
+                console.log(jsonResponse);
+                self.message = jsonResponse;
+
+
+                if(jsonResponse.hasOwnProperty("user_id")){
+                    cuser={"token":jsonResponse.token,id: jsonResponse.user_id};
+                    localStorage.current_user = JSON.stringify(cuser);
+                    alert(jsonResponse.message)
+                    router.push("/explore");
+                }else{
+                    self.message = jsonResponse.errors
+                    alert(self.message)
+                }
+            }).catch(function(error){
+                self.messageFlag = false;
+                // console.log(error);
+            });
+
+        },
+        data: function(){
+            return {
+                message: ""
+            }
+        }
+    }
+});
+
+const Logout = Vue.component("logout", {
+  template: `
+  <div>
+  <div/>`,
+  created: function(){
+    const self = this;
+    
+    fetch("api/auth/logout", {
+      method: "GET"
+    }).then(function(response){
+      return response.json();
+    }).then(function(jsonResponse){
+      localStorage.removeItem("current_user");
+      router.go();
+      router.push("/");
+    }).catch(function(error){
+      console.log(error);
+    });
+  }
+});
 
 
 
@@ -327,6 +552,9 @@ const router = new VueRouter({
         // {path: "/upload", component: Upload},
         {path: "/register/", component: Register},
         {path: "/login/", component: Login},
+        {path:"/logout/", component: Logout},
+        {path: "/explore/", component : Explore},
+        {path: "/posts/new", component: NewPost },
         
         
         
