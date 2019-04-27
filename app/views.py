@@ -126,16 +126,16 @@ def follow(user_id):
     
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
-@app.route("api/auth/post",methods = ["POST"])
-def viewPost():
-    allPost= Posts.query.all()
-    postings=[]
-    for post in allPost:
-        user = Users.query.filter_by(id=post.user_id).first()
-        likes= len(Likes.query.filter_by(post_id=post.id).all())
-        post= {"id":post.id,"user_id":post.userid,"username":user.username,"user_photo": os.path.join(app.config['PROFILE_IMAGES]'],user.profile_photo),"photo": os.path.join(app.config['UPLOAD_FOLDER'],post.photo), "caption": post.caption, "created_on": strf_time(post.created_on, "%d %B %Y"), "likes": likes}"}         
-        postings.append(post)
-    return jsonify(postings=postings)
+@app.route('/api/posts', methods = ['GET'])
+def AllPosts():
+    Posts = Post.query.all()
+    tpost = []
+    for i in Posts:
+        user = UserProfile.query.filter_by(id=i.user_id).first()
+        likes = len(Likes.query.filter_by(post_id=i.post_id).all())
+        spost = {"id": i.post_id, "uid": i.user_id, "username": user.username, "profile_pic": os.path.join(app.config['UPLOAD_FOLDER'], user.photograph), "pic":os.path.join(app.config['PROFILE_IMAGES'], i.photo ), "caption": i.caption, "pcreation": i.created_on, "likes" : likes}
+        tpost.append(spost)
+    return jsonify(posts=tpost)
         
 @app.route('/api/posts/<post_id>/like',methods = ['POST'])
 def like(post_id):
