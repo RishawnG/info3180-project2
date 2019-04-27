@@ -126,7 +126,35 @@ def follow(user_id):
     
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
-
+@app.route("api/auth/post",methods = ["POST"])
+def viewPost():
+    allPost= Posts.query.all()
+    postings=[]
+    for post in allPost:
+        user = Users.query.filter_by(id=post.user_id).first()
+        likes= len(Likes.query.filter_by(post_id=post.id).all())
+        post= {"id":post.id,"user_id":post.userid,"username":user.username,"user_photo": os.path.join(app.config['PROFILE_IMAGES]'],user.profile_photo),"photo": os.path.join(app.config['UPLOAD_FOLDER'],post.photo), "caption": post.caption, "created_on": strf_time(post.created_on, "%d %B %Y"), "likes": likes}"}         
+        postings.append(post)
+    return jsonify(postings=postings)
+        
+@app.route('/api/posts/<post_id>/like',methods = ['POST'])
+def like(post_id):
+    requests= request.get_json()
+    post_id = requests["post_id"]
+    user_id = requests["user_id"]
+    postx = Post.query.filter_by(post_id=post_id).first()
+    likesx = Likes.query.filter_by(post_id=post_id).all()
+    if likesx is not None:
+        for like in likesx:
+            if like.id == user_id:
+                return jsonify(message="Post has been liked already.")
+    added = Likes(id = user_id,post_id = post_id)
+    db.session.add(added)
+    db.session.commit()
+    tlikes = len(Likes.query.filter_by(post_id=post_id).all())
+    return jsonify({"message": 'Post liked', "likes":tlikes })
+    
+    
 @app.route('/api/auth/logout', methods = ['GET'])
 def logout():
     return jsonify(message= "User successfully logged out.")
@@ -147,17 +175,6 @@ def form_errors(form):
     return error_messages
 
 
-
-# @app.route("api/auth/post",methods = ["POST"])
-# def viewPost():
-#     allPost= Posts.query.all()
-#     postings=[]
-#     for post in allPost:
-#         user = Users.query.filter_by(id=post.user_id).first()
-#         likes= len(Likes.query.filter_by(post_id=post.id).all())
-#         post= {"id":post.id,"user_id":post.userid,"username":user.username,"user_photo": os.path.join(app.config['PROFILE_IMAGES]'],user.profile_photo),"photo": os.path.join(app.config['UPLOAD_FOLDER'],post.photo), "caption": post.caption, "created_on": strf_time(post.created_on, "%d %B %Y"), "likes": likes}"}         
-#         postings.append(post)
-#     return jsonify(postings=postings)
           
 
 
